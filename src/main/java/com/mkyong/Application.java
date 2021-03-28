@@ -38,7 +38,7 @@ public class Application implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-
+        long currTime = System.currentTimeMillis();
         System.out.println("DATASOURCE = " + dataSource);
         List<LinksLabels> linksLabels = null;
 //        linksLabels = linksRepository.findTop100By();
@@ -49,6 +49,7 @@ public class Application implements CommandLineRunner {
         }
         linksLabels = null;
         Collection<LinksLabels> values = linksLabelsHashMap.values();
+        List<Itemspaths> itemspaths = new ArrayList<>();
         for (LinksLabels value : values) {
             Itemspaths itemsPathsPojo = new Itemspaths();
             itemsPathsPojo.setItemid(value.getItemid());
@@ -67,10 +68,16 @@ public class Application implements CommandLineRunner {
             itemsPathsPojo.setItemfullpathids(itemfullpathidsBuilder.toString());//full path ids
             itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
             itemsPathsPojo.setRootparent(rootParent);//kp id
-            itemspathRepo.save(itemsPathsPojo);
+            itemspaths.add(itemsPathsPojo);
         }
+        long currentTime = System.currentTimeMillis();
+        double elapsedTime = (currentTime - currTime) / 1000.0;
+        System.out.println("Time Native ***************** :" + elapsedTime);
         System.out.println("Done!");
-
+        itemspathRepo.saveAll(itemspaths);
+        long currentTimeA = System.currentTimeMillis();
+        double elapsedTimeA = (currentTime - currTime) / 1000.0;
+        System.out.println("All Time ***************** :" + elapsedTimeA);
         exit(0);
     }
 

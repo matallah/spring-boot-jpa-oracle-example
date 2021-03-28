@@ -1,12 +1,15 @@
 package com.mkyong.model;
 
+import org.springframework.data.domain.Persistable;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.UUID;
 
 @Entity
 @Table(name = "ITEMSPATHS")
-public class Itemspaths implements Serializable {
+public class Itemspaths implements Serializable, Persistable<String> {
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -121,5 +124,15 @@ public class Itemspaths implements Serializable {
     @Override
     public String toString() {
         return "com.en.Itemspath[ itemid=" + itemid + " ]";
+    }
+
+    @Override
+    public String getId() {
+        return itemid;
+    }
+
+    @Override
+    public boolean isNew() {
+        return true;
     }
 }
