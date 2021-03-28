@@ -76,7 +76,7 @@ public class Application implements CommandLineRunner {
         System.out.println("Done!");
         itemspathRepo.saveAll(itemspaths);
         long currentTimeA = System.currentTimeMillis();
-        double elapsedTimeA = (currentTime - currTime) / 1000.0;
+        double elapsedTimeA = (currentTimeA - currTime) / 1000.0;
         System.out.println("All Time ***************** :" + elapsedTimeA);
         exit(0);
     }
