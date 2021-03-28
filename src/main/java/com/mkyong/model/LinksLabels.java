@@ -6,7 +6,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "LINKSLABEL")
+@Table(name = "LINKSLABELVIEW")
 public class LinksLabels {
 
     private static final long serialVersionUID = 1L;
@@ -23,6 +23,8 @@ public class LinksLabels {
     private String indexclass;
     @Column(name = "LABEL")
     private String label;
+    @Column(name = "TYPE")
+    private Short type;
 
     public LinksLabels() {
     }
@@ -77,6 +79,14 @@ public class LinksLabels {
 
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    public Short getType() {
+        return type;
+    }
+
+    public void setType(Short type) {
+        this.type = type;
     }
 
     @Override

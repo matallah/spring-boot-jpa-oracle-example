@@ -72,6 +72,9 @@ public class Application implements CommandLineRunner {
             sqlBuilder.append("INSERT INTO itemspaths (itemid,directparentid,directparenttype,itemfullpath,parentlabel,itemfullpathids,rootparent,fullparenttype) VALUES (");
             sqlBuilder.append("");
             sqlBuilder.append(");");
+            if (value.getType() == 3) {
+                linksLabelsHashMap.remove(value.getItemid());
+            }
         }
         System.out.println("Done!");
 
