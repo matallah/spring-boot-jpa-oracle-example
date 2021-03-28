@@ -68,10 +68,6 @@ public class Application implements CommandLineRunner {
             itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
             itemsPathsPojo.setRootparent(rootParent);//kp id
             itemspathRepo.save(itemsPathsPojo);
-            StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append("INSERT INTO itemspaths (itemid,directparentid,directparenttype,itemfullpath,parentlabel,itemfullpathids,rootparent,fullparenttype) VALUES (");
-            sqlBuilder.append("");
-            sqlBuilder.append(");");
             if (value.getType() == 3) {
                 linksLabelsHashMap.remove(value.getItemid());
             }
