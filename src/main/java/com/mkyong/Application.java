@@ -68,9 +68,6 @@ public class Application implements CommandLineRunner {
             itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
             itemsPathsPojo.setRootparent(rootParent);//kp id
             itemspathRepo.save(itemsPathsPojo);
-            if (value.getType() == 3) {
-                linksLabelsHashMap.remove(value.getItemid());
-            }
         }
         System.out.println("Done!");
 
