@@ -1,8 +1,10 @@
 package com.mkyong;
 
 import com.mkyong.dao.ItemspathRepo;
+import com.mkyong.dao.KnowledgepoolRepo;
 import com.mkyong.dao.LinksRepository;
 import com.mkyong.model.Itemspaths;
+import com.mkyong.model.Knowledgepool;
 import com.mkyong.model.LinksLabels;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -35,6 +37,8 @@ public class Application implements CommandLineRunner {
     LinksRepository linksRepository;
     @Autowired
     ItemspathRepo itemspathRepo;
+    @Autowired
+    KnowledgepoolRepo knowledgepoolRepo;
 
     public static void main(String[] args) throws Exception {
         SpringApplication.run(Application.class, args);
@@ -46,20 +50,15 @@ public class Application implements CommandLineRunner {
     public void run(String... args) throws Exception {
         long currTime = System.currentTimeMillis();
         System.out.println("DATASOURCE = " + dataSource);
+        Collection<LinksLabels> values = null;
         itemspathRepo.deleteAll();
         ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap = new ConcurrentHashMap<>();
 //        linksLabels = linksRepository.findTop100By();
 //        linksLabels = (List<LinksLabels>) linksRepository.findAll();
         short parentType = 1;
-        System.out.println("Start Retriving ************************");
-        List<LinksLabels> linksLabels = linksRepository.findAllByParenttype(parentType);
-        System.out.println("End Retriving ************************ " + linksLabels.size());
-        System.out.println("Start Fill Map ************************");
-        for (LinksLabels labels : linksLabels) {
-            linksLabelsHashMap.put(labels.getItemid(), labels);
-        }
-        System.out.println("End Fill Map ************************ " + linksLabelsHashMap.size());
-        linksLabels.clear();
+        System.out.println("Start Retrieving with ParentType: " + parentType + " ************************");
+        values = linksRepository.findAllByParenttype(parentType);
+        System.out.println("End Retrieving ************************ " + values.size());
 //        for (int i = 0; i < 58; i++) {
 //            System.out.println("********************* Index number " + i + " ********************");
 //            Pageable pageable = PageRequest.of(i, 500000, Sort.by("id"));
@@ -70,9 +69,14 @@ public class Application implements CommandLineRunner {
 //            }
 //            System.out.println("********************* Map size " + linksLabelsHashMap.size() + " ********************");
 //        }
-        Collection<LinksLabels> values = linksLabelsHashMap.values();
         int index = 0;
         if (parentType == 2) {
+            System.out.println("Start Fill Map ************************");
+            for (LinksLabels labels : values) {
+                linksLabelsHashMap.put(labels.getItemid(), labels);
+            }
+            values = linksLabelsHashMap.values();
+            System.out.println("End Fill Map ************************ " + linksLabelsHashMap.size());
             for (LinksLabels value : values) {
                 ++index;
                 System.out.println("Start index ************************" + index + " *** ItemId: " + value.getItemid() + " *** parentId: " + value.getParentid() + " *** type: " + value.getType());
@@ -100,7 +104,21 @@ public class Application implements CommandLineRunner {
                 }
             }
         } else {
-
+            List<Knowledgepool> knowledgepoolRepoAll = knowledgepoolRepo.findAll();
+            values.forEach(value -> {
+                Itemspaths itemsPathsPojo = new Itemspaths();
+                itemsPathsPojo.setItemid(value.getItemid());
+                itemsPathsPojo.setDirectparentid(value.getParentid());
+                itemsPathsPojo.setDirectparenttype(BigInteger.valueOf(value.getParenttype()));
+                knowledgepoolRepoAll.stream().filter(knowledgepool -> value.getParentid().equals(knowledgepool.getPoolid())).forEach(knowledgepool -> {
+                    itemsPathsPojo.setParentlabel(knowledgepool.getName());
+                    itemsPathsPojo.setItemfullpath(value.getLabel() + "~" + knowledgepool.getName());//full path labels
+                    itemsPathsPojo.setItemfullpathids(value.getItemid() + "~" + knowledgepool.getPoolid());//full path ids
+                    itemsPathsPojo.setFullparenttype(value.getType() + "~" + 0);//full path ids
+                    itemsPathsPojo.setRootparent(knowledgepool.getPoolid());//kp id
+                });
+                itemspathRepo.save(itemsPathsPojo);
+            });
         }
         long currentTime = System.currentTimeMillis();
         double elapsedTime = (currentTime - currTime) / 1000.0;
