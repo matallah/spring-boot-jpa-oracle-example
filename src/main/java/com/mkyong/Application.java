@@ -8,12 +8,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.exit;
 
@@ -40,48 +46,73 @@ public class Application implements CommandLineRunner {
     public void run(String... args) throws Exception {
         long currTime = System.currentTimeMillis();
         System.out.println("DATASOURCE = " + dataSource);
-        List<LinksLabels> linksLabels = null;
+        itemspathRepo.deleteAll();
+        ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap = new ConcurrentHashMap<>();
 //        linksLabels = linksRepository.findTop100By();
-        linksLabels = (List<LinksLabels>) linksRepository.findAll();
-        HashMap<String, LinksLabels> linksLabelsHashMap = new HashMap<>();
-        for (LinksLabels linksLabel : linksLabels) {
-            linksLabelsHashMap.put(linksLabel.getItemid(), linksLabel);
+//        linksLabels = (List<LinksLabels>) linksRepository.findAll();
+        short parentType = 1;
+        System.out.println("Start Retriving ************************");
+        List<LinksLabels> linksLabels = linksRepository.findAllByParenttype(parentType);
+        System.out.println("End Retriving ************************ " + linksLabels.size());
+        System.out.println("Start Fill Map ************************");
+        for (LinksLabels labels : linksLabels) {
+            linksLabelsHashMap.put(labels.getItemid(), labels);
         }
-        linksLabels = null;
+        System.out.println("End Fill Map ************************ " + linksLabelsHashMap.size());
+        linksLabels.clear();
+//        for (int i = 0; i < 58; i++) {
+//            System.out.println("********************* Index number " + i + " ********************");
+//            Pageable pageable = PageRequest.of(i, 500000, Sort.by("id"));
+//            Page<LinksLabels> all = linksRepository.findAll(pageable);
+//            List<LinksLabels> content = all.getContent();
+//            for (LinksLabels labels : content) {
+//                linksLabelsHashMap.put(labels.getItemid(), labels);
+//            }
+//            System.out.println("********************* Map size " + linksLabelsHashMap.size() + " ********************");
+//        }
         Collection<LinksLabels> values = linksLabelsHashMap.values();
-        List<Itemspaths> itemspaths = new ArrayList<>();
-        for (LinksLabels value : values) {
-            Itemspaths itemsPathsPojo = new Itemspaths();
-            itemsPathsPojo.setItemid(value.getItemid());
-            itemsPathsPojo.setDirectparentid(value.getParentid());
-            itemsPathsPojo.setDirectparenttype(BigInteger.valueOf(value.getParenttype()));
-            if (linksLabelsHashMap.containsKey(value.getParentid())) {
-                LinksLabels parent = linksLabelsHashMap.get(value.getParentid());
-                itemsPathsPojo.setParentlabel(parent.getLabel());//Parent label
+        int index = 0;
+        if (parentType == 2) {
+            for (LinksLabels value : values) {
+                ++index;
+                System.out.println("Start index ************************" + index + " *** ItemId: " + value.getItemid() + " *** parentId: " + value.getParentid() + " *** type: " + value.getType());
+                Itemspaths itemsPathsPojo = new Itemspaths();
+                itemsPathsPojo.setItemid(value.getItemid());
+                itemsPathsPojo.setDirectparentid(value.getParentid());
+                itemsPathsPojo.setDirectparenttype(BigInteger.valueOf(value.getParenttype()));
+                if (linksLabelsHashMap.containsKey(value.getParentid())) {
+                    LinksLabels parent = linksLabelsHashMap.get(value.getParentid());
+                    itemsPathsPojo.setParentlabel(parent.getLabel());//Parent label
+                }
+                StringBuilder itemFullPathBuilder = new StringBuilder(value.getLabel() + "~");
+                StringBuilder itemfullpathidsBuilder = new StringBuilder(value.getItemid() + "~");
+                StringBuilder iullparenttypeBuilder = new StringBuilder(value.getParenttype() + "~");
+                String rootParent = "";
+                recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, rootParent, linksLabelsHashMap, value, value.getParentid());
+                itemsPathsPojo.setItemfullpath(itemFullPathBuilder.toString());//full path labels
+                itemsPathsPojo.setItemfullpathids(itemfullpathidsBuilder.toString());//full path ids
+                itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
+                itemsPathsPojo.setRootparent(rootParent);//kp id
+                itemspathRepo.save(itemsPathsPojo);
+                Short type = value.getType();
+                if (type == 3) {
+                    linksLabelsHashMap.remove(value.getItemid());
+                }
             }
-            StringBuilder itemFullPathBuilder = new StringBuilder(value.getLabel() + "~");
-            StringBuilder itemfullpathidsBuilder = new StringBuilder(value.getItemid() + "~");
-            StringBuilder iullparenttypeBuilder = new StringBuilder(value.getParenttype() + "~");
-            String rootParent = "";
-            recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, rootParent, linksLabelsHashMap, value, value.getParentid());
-            itemsPathsPojo.setItemfullpath(itemFullPathBuilder.toString());//full path labels
-            itemsPathsPojo.setItemfullpathids(itemfullpathidsBuilder.toString());//full path ids
-            itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
-            itemsPathsPojo.setRootparent(rootParent);//kp id
-            itemspaths.add(itemsPathsPojo);
+        } else {
+
         }
         long currentTime = System.currentTimeMillis();
         double elapsedTime = (currentTime - currTime) / 1000.0;
         System.out.println("Time Native ***************** :" + elapsedTime);
         System.out.println("Done!");
-        itemspathRepo.saveAll(itemspaths);
         long currentTimeA = System.currentTimeMillis();
         double elapsedTimeA = (currentTimeA - currTime) / 1000.0;
         System.out.println("All Time ***************** :" + elapsedTimeA);
         exit(0);
     }
 
-    private static void recursionFullParent(StringBuilder itemFullPathBuilder, StringBuilder itemfullpathidsBuilder, StringBuilder iullparenttypeBuilder, String rootParent, HashMap<String, LinksLabels> linksLabelsHashMap, LinksLabels linksLabels, String parentid) {
+    private static void recursionFullParent(StringBuilder itemFullPathBuilder, StringBuilder itemfullpathidsBuilder, StringBuilder iullparenttypeBuilder, String rootParent, ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap, LinksLabels linksLabels, String parentid) {
         if (linksLabelsHashMap.containsKey(parentid)) {
             LinksLabels parent = linksLabelsHashMap.get(parentid);
             rootParent = parent.getParentid();
