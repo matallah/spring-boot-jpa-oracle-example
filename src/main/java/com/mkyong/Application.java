@@ -51,32 +51,12 @@ public class Application implements CommandLineRunner {
         long currTime = System.currentTimeMillis();
         System.out.println("DATASOURCE = " + dataSource);
         Collection<LinksLabels> values = null;
-        itemspathRepo.deleteAll();
-        ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap = new ConcurrentHashMap<>();
-//        linksLabels = linksRepository.findTop100By();
-//        linksLabels = (List<LinksLabels>) linksRepository.findAll();
         short parentType = 2;
         System.out.println("Start Retrieving with ParentType: " + parentType + " ************************");
         values = linksRepository.findAllByParenttype(parentType);
         System.out.println("End Retrieving ************************ " + values.size());
-//        for (int i = 0; i < 58; i++) {
-//            System.out.println("********************* Index number " + i + " ********************");
-//            Pageable pageable = PageRequest.of(i, 500000, Sort.by("id"));
-//            Page<LinksLabels> all = linksRepository.findAll(pageable);
-//            List<LinksLabels> content = all.getContent();
-//            for (LinksLabels labels : content) {
-//                linksLabelsHashMap.put(labels.getItemid(), labels);
-//            }
-//            System.out.println("********************* Map size " + linksLabelsHashMap.size() + " ********************");
-//        }
         int index = 0;
         if (parentType == 2) {
-            System.out.println("Start Fill Map ************************");
-            for (LinksLabels labels : values) {
-                linksLabelsHashMap.put(labels.getItemid(), labels);
-            }
-            values = linksLabelsHashMap.values();
-            System.out.println("End Fill Map ************************ " + linksLabelsHashMap.size());
             for (LinksLabels value : values) {
                 ++index;
                 System.out.println("Start index ************************" + index + " *** ItemId: " + value.getItemid() + " *** parentId: " + value.getParentid() + " *** type: " + value.getType());
@@ -84,19 +64,15 @@ public class Application implements CommandLineRunner {
                 itemsPathsPojo.setItemid(value.getItemid());
                 itemsPathsPojo.setDirectparentid(value.getParentid());
                 itemsPathsPojo.setDirectparenttype(BigInteger.valueOf(value.getParenttype()));
-                if (linksLabelsHashMap.containsKey(value.getParentid())) {
-                    LinksLabels parent = linksLabelsHashMap.get(value.getParentid());
-                    itemsPathsPojo.setParentlabel(parent.getLabel());//Parent label
-                }
+                values.stream().filter(linksLabels -> linksLabels.getItemid().equals(value.getParentid())).map(LinksLabels::getLabel).forEachOrdered(itemsPathsPojo::setParentlabel);
                 StringBuilder itemFullPathBuilder = new StringBuilder(value.getLabel() + "~");
                 StringBuilder itemfullpathidsBuilder = new StringBuilder(value.getItemid() + "~");
-                StringBuilder iullparenttypeBuilder = new StringBuilder(value.getParenttype() + "~");
-                String rootParent = "";
-                recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, rootParent, linksLabelsHashMap, value, value.getParentid());
+                StringBuilder iullparenttypeBuilder = new StringBuilder(value.getType() + "~");
+                this.recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, value, value.getParentid());
                 itemsPathsPojo.setItemfullpath(itemFullPathBuilder.toString());//full path labels
                 itemsPathsPojo.setItemfullpathids(itemfullpathidsBuilder.toString());//full path ids
                 itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
-                itemsPathsPojo.setRootparent(rootParent);//kp id
+                itemsPathsPojo.setRootparent(itemfullpathidsBuilder.toString().split("~")[itemfullpathidsBuilder.toString().split("~").length - 1]);//kp id
                 itemspathRepo.save(itemsPathsPojo);
                 Short type = value.getType();
             }
@@ -127,23 +103,31 @@ public class Application implements CommandLineRunner {
         exit(0);
     }
 
-    private static void recursionFullParent(StringBuilder itemFullPathBuilder, StringBuilder itemfullpathidsBuilder, StringBuilder iullparenttypeBuilder, String rootParent, ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap, LinksLabels linksLabels, String parentid) {
-        if (linksLabelsHashMap.containsKey(parentid)) {
-            LinksLabels parent = linksLabelsHashMap.get(parentid);
-            rootParent = parent.getParentid();
-            parentid = parent.getParentid();
-            if (parentid != null) {
-                itemFullPathBuilder.append(parent.getLabel()).append("~");
-                itemfullpathidsBuilder.append(parent.getParentid()).append("~");
-                iullparenttypeBuilder.append(parent.getParenttype()).append("~");
-                recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, rootParent, linksLabelsHashMap, linksLabels, parentid);
-            } else {
-                itemFullPathBuilder.append(parent.getLabel());
-                itemfullpathidsBuilder.append(linksLabels.getParentid());
-                iullparenttypeBuilder.append("0");
-                rootParent = linksLabels.getParentid();
-            }
+    private void recursionFullParent(StringBuilder itemFullPathBuilder, StringBuilder itemfullpathidsBuilder, StringBuilder iullparenttypeBuilder, LinksLabels linksLabels, String parentid) {
+        List<LinksLabels> allByItemid = linksRepository.findAllByItemid(parentid);
+        LinksLabels linksByParentId = !allByItemid.isEmpty() ? allByItemid.get(0) : null;
+        if (linksByParentId != null) {
+            itemFullPathBuilder.append(linksByParentId.getLabel()).append("~");
+            itemfullpathidsBuilder.append(linksByParentId.getItemid()).append("~");
+            iullparenttypeBuilder.append(linksByParentId.getType() != null ? linksByParentId.getType() : 1).append("~");
+            recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, linksLabels, linksByParentId.getParentid());
         }
+//        if (linksLabelsHashMap.containsKey(parentid)) {
+//            LinksLabels parent = linksLabelsHashMap.get(parentid);
+//            rootParent = parent.getParentid();
+//            parentid = parent.getParentid();
+//            if (parentid != null) {
+//                itemFullPathBuilder.append(parent.getLabel()).append("~");
+//                itemfullpathidsBuilder.append(parent.getParentid()).append("~");
+//                iullparenttypeBuilder.append(parent.getParenttype()).append("~");
+//                recursionFullParent(itemFullPathBuilder, itemfullpathidsBuilder, iullparenttypeBuilder, rootParent, linksLabels, parentid);
+//            } else {
+//                itemFullPathBuilder.append(parent.getLabel());
+//                itemfullpathidsBuilder.append(linksLabels.getParentid());
+//                iullparenttypeBuilder.append("0");
+//                rootParent = linksLabels.getParentid();
+//            }
+//        }
     }
 
 
