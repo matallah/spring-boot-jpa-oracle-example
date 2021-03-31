@@ -64,7 +64,7 @@ public class Application implements CommandLineRunner {
                 itemsPathsPojo.setItemid(value.getItemid());
                 itemsPathsPojo.setDirectparentid(value.getParentid());
                 itemsPathsPojo.setDirectparenttype(BigInteger.valueOf(value.getParenttype()));
-                values.stream().filter(linksLabels -> linksLabels.getItemid().equals(value.getParentid())).map(LinksLabels::getLabel).forEachOrdered(itemsPathsPojo::setParentlabel);
+                //values.stream().filter(linksLabels -> linksLabels.getItemid().equals(value.getParentid())).map(LinksLabels::getLabel).forEachOrdered(itemsPathsPojo::setParentlabel);
                 StringBuilder itemFullPathBuilder = new StringBuilder(value.getLabel() + "~");
                 StringBuilder itemfullpathidsBuilder = new StringBuilder(value.getItemid() + "~");
                 StringBuilder iullparenttypeBuilder = new StringBuilder(value.getType() + "~");
@@ -72,6 +72,7 @@ public class Application implements CommandLineRunner {
                 itemsPathsPojo.setItemfullpath(itemFullPathBuilder.toString());//full path labels
                 itemsPathsPojo.setItemfullpathids(itemfullpathidsBuilder.toString());//full path ids
                 itemsPathsPojo.setFullparenttype(iullparenttypeBuilder.toString());//full path ids
+                itemsPathsPojo.setParentlabel(itemFullPathBuilder.toString().split("~")[1]);
                 itemsPathsPojo.setRootparent(itemfullpathidsBuilder.toString().split("~")[itemfullpathidsBuilder.toString().split("~").length - 1]);//kp id
                 itemspathRepo.save(itemsPathsPojo);
                 Short type = value.getType();
