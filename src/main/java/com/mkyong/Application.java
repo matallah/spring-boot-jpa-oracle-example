@@ -55,7 +55,7 @@ public class Application implements CommandLineRunner {
         ConcurrentHashMap<String, LinksLabels> linksLabelsHashMap = new ConcurrentHashMap<>();
 //        linksLabels = linksRepository.findTop100By();
 //        linksLabels = (List<LinksLabels>) linksRepository.findAll();
-        short parentType = 1;
+        short parentType = 2;
         System.out.println("Start Retrieving with ParentType: " + parentType + " ************************");
         values = linksRepository.findAllByParenttype(parentType);
         System.out.println("End Retrieving ************************ " + values.size());
@@ -99,9 +99,6 @@ public class Application implements CommandLineRunner {
                 itemsPathsPojo.setRootparent(rootParent);//kp id
                 itemspathRepo.save(itemsPathsPojo);
                 Short type = value.getType();
-                if (type == 3) {
-                    linksLabelsHashMap.remove(value.getItemid());
-                }
             }
         } else {
             List<Knowledgepool> knowledgepoolRepoAll = knowledgepoolRepo.findAll();
